@@ -70,7 +70,7 @@
 
   <!-- ตอนเริ่มต้นให้ซ่อน formCard ไว้ก่อน -->
   <div class="card hidden" id="formCard">
-    <div class="progress" id="progressText">ข้อที่ 1 / 5</div>
+    <div class="progress" id="progressText">ข้อที่ 1 / 4</div>
     
     <!-- เติม onerror ป้องกันรูปเสียแล้วภาพแตก -->
     <img id="questionImg" src="" alt="Loading..." class="question-img fade-in" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x250?text=Image+Error';">
@@ -93,12 +93,12 @@
   </div>
 
   <script>
+    // ✅ อัปเดตอาร์เรย์รูปภาพ: ลดเหลือ 4 รูป และสลับรูปที่ 2 กับ 3
     var imageList = [
       "https://i.postimg.cc/76PdMBXR/Slide2-0.png",
-      "https://i.ibb.co/Yrp9Typ/PDPD.png", /* ❌ แก้ไขลิงก์ ImgBB ตรงนี้ให้เป็นลิงก์รูปลงท้ายด้วย .png หรือ .jpg นะครับ */
-      "https://i.postimg.cc/h4NgcB24/Slide4-0.png",
-      "https://i.postimg.cc/1zR1J53n/Slide5-0.png",
-      "https://i.postimg.cc/mDJxLYNS/Slide6-0.png"
+      "https://i.postimg.cc/h4NgcB24/Slide4-0.png", // เดิมคือรูปที่ 3 สลับมาเป็น 2
+      "https://i.ibb.co/Yrp9Typ/PDPD.png",          // เดิมคือรูปที่ 2 สลับมาเป็น 3
+      "https://i.postimg.cc/1zR1J53n/Slide5-0.png"
     ];
 
     var currentIndex = 0;
