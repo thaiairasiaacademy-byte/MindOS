@@ -72,7 +72,8 @@
   <div class="card hidden" id="formCard">
     <div class="progress" id="progressText">ข้อที่ 1 / 5</div>
     
-    <img id="questionImg" src="" alt="Loading..." class="question-img fade-in">
+    <!-- เติม onerror ป้องกันรูปเสียแล้วภาพแตก -->
+    <img id="questionImg" src="" alt="Loading..." class="question-img fade-in" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x250?text=Image+Error';">
     
     <p style="margin: 0 0 10px 0; color: #444;">พิมพ์ 3 คำสั้นๆ ที่นึกถึง</p>
     <input type="text" id="w1" placeholder="คำที่ 1" required autocomplete="off">
@@ -83,7 +84,7 @@
   </div>
 
   <div class="card hidden" id="summaryCard">
-    <h2 class="summary-head">🎉 ส่งครบแล้ว!</h2>
+    <h2 class="summary-head">🎉 ทำครบแล้ว!</h2>
     <p style="color:#666; font-size:0.9rem;">นี่คือสรุปคำตอบของคุณ</p>
     
     <div class="summary-list" id="summaryContainer"></div>
@@ -92,12 +93,9 @@
   </div>
 
   <script>
-    // 🔴🔴🔴 ตรวจสอบ URL ของ Google Apps Script 🔴🔴🔴
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyCVvKtFClPk6qkSUGmxUNRG7JbiIBhN2gDxRK_PfZnE7RgL34PaDPxWWLbsLFMJmeQqQ/exec"; 
-
     var imageList = [
       "https://i.postimg.cc/76PdMBXR/Slide2-0.png",
-      "https://i.postimg.cc/631jVB86/Slide3-0.png",
+      "https://i.ibb.co/Yrp9Typ/PDPD.png", /* ❌ แก้ไขลิงก์ ImgBB ตรงนี้ให้เป็นลิงก์รูปลงท้ายด้วย .png หรือ .jpg นะครับ */
       "https://i.postimg.cc/h4NgcB24/Slide4-0.png",
       "https://i.postimg.cc/1zR1J53n/Slide5-0.png",
       "https://i.postimg.cc/mDJxLYNS/Slide6-0.png"
@@ -106,14 +104,13 @@
     var currentIndex = 0;
     var userHistory = []; 
 
-    // ✅ ฟังก์ชันโหลดรูปภาพแบบบังคับรอ (Promise.all)
+    // ✅ ฟังก์ชันโหลดรูปภาพแบบบังคับรอ
     window.onload = function() {
       let loadedCount = 0;
       const loadingText = document.getElementById('loadingText');
 
-      // สร้าง Array ของ Promise เพื่อให้โหลดภาพทั้งหมดพร้อมกัน
       const imagePromises = imageList.map((src) => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           const img = new Image();
           img.src = src;
           img.onload = () => {
@@ -121,11 +118,14 @@
             loadingText.innerText = `โหลดสำเร็จ ${loadedCount} / ${imageList.length}`;
             resolve();
           };
-          img.onerror = () => resolve(); // หากภาพบางรูปเสีย ก็ให้ข้ามไปเพื่อไม่ให้ค้าง
+          img.onerror = () => {
+            loadedCount++;
+            loadingText.innerText = `โหลดสำเร็จ ${loadedCount} / ${imageList.length}`;
+            resolve(); // ให้ข้ามไปเลยถ้ารูปเสีย จะได้ไม่ค้าง
+          };
         });
       });
 
-      // เมื่อภาพทั้งหมดถูกโหลดเสร็จแล้ว
       Promise.all(imagePromises).then(() => {
         document.getElementById('loadingScreen').style.display = 'none';
         document.getElementById('formCard').classList.remove('hidden');
@@ -146,9 +146,9 @@
         
         var btn = document.getElementById('btnSubmit');
         btn.disabled = false;
-        btn.innerText = "ส่งคำตอบ";
         
-        setTimeout(() => document.getElementById('w1').focus(), 100);
+        // ลบ focus ออก เพื่อไม่ให้คีย์บอร์ดมือถือเด้งขึ้นมาบังรูปภาพ
+        // setTimeout(() => document.getElementById('w1').focus(), 100);
 
         img.classList.remove('fade-in');
         void img.offsetWidth;
@@ -159,12 +159,18 @@
       }
     }
 
+    // ✅ พิมพ์คำที่ 3 เสร็จแล้วกด Enter เพื่อส่งได้เลย
+    document.getElementById('w3').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        submitData();
+      }
+    });
+
     function submitData() {
       var w1 = document.getElementById('w1').value.trim();
       var w2 = document.getElementById('w2').value.trim();
       var w3 = document.getElementById('w3').value.trim();
 
-      // ✅ ใช้ SweetAlert2 แทน alert() ธรรมดา
       if(!w1 || !w2 || !w3) {
         Swal.fire({
           icon: 'warning',
@@ -176,51 +182,12 @@
         return;
       }
 
-      var btn = document.getElementById('btnSubmit');
-      btn.innerText = "กำลังบันทึก...";
-      btn.disabled = true;
-
+      // 🚀 เก็บข้อมูลลง History ในเครื่อง
       userHistory.push({ imgIndex: currentIndex, w1: w1, w2: w2, w3: w3 });
 
-      var data = { 
-        imgId: currentIndex + 1, 
-        w1: w1, w2: w2, w3: w3 
-      };
-
-      fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(data)
-      })
-      .then(response => response.json())
-      .then(result => {
-        if(result.status === 'success') {
-          currentIndex++;
-          loadState();
-        } else {
-          // ✅ SweetAlert2 กรณี Error จากฝั่ง Google Script
-          Swal.fire({
-            icon: 'error',
-            title: 'เกิดข้อผิดพลาด',
-            text: 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์ กรุณาลองใหม่',
-            confirmButtonColor: '#e74c3c'
-          });
-          btn.innerText = "ส่งคำตอบ";
-          btn.disabled = false;
-        }
-      })
-      .catch(error => {
-        console.error("Error:", error);
-        // ✅ SweetAlert2 กรณีเน็ตหลุด / หรือเรียก URL ไม่ได้
-        Swal.fire({
-          icon: 'error',
-          title: 'การเชื่อมต่อมีปัญหา',
-          text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่',
-          confirmButtonColor: '#e74c3c'
-        });
-        btn.innerText = "ส่งคำตอบ";
-        btn.disabled = false;
-      });
+      // 🚀 เปลี่ยนข้อทันที (ตัด GAS fetch ออกไปแล้ว)
+      currentIndex++;
+      loadState();
     }
 
     function showSummary() {
@@ -233,7 +200,7 @@
         var imgUrl = imageList[item.imgIndex];
         html += `
           <div class="summary-item">
-            <img src="${imgUrl}" class="thumb-img">
+            <img src="${imgUrl}" class="thumb-img" onerror="this.src='https://via.placeholder.com/60?text=Error'">
             <div class="answers-box">
               <div style="font-size:0.8rem; color:#888; margin-bottom:4px;">ภาพที่ ${index + 1}</div>
               <div>
@@ -246,13 +213,12 @@
         `;
       });
       
-      // แสดงข้อความยินดีเมื่อทำเสร็จ
       Swal.fire({
         icon: 'success',
-        title: 'success!',
-        text: '',
+        title: 'ยอดเยี่ยม!',
+        text: 'ทำแบบฝึกหัดครบแล้ว',
         confirmButtonColor: '#2ecc71',
-        timer: 2000,
+        timer: 1500,
         showConfirmButton: false
       });
 
